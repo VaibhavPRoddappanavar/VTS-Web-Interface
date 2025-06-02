@@ -8,6 +8,7 @@ import InfoCard from '@/components/InfoCard';
 import LoadingState from '@/components/LoadingState';
 import ErrorState from '@/components/ErrorState';
 import DateTimeFilter from '@/components/DateTimeFilter';
+import SaveRidePanel from '@/components/SaveRidePanel';
 
 // Import Map component dynamically to avoid SSR issues with Leaflet
 const Map = dynamic(() => import('@/components/Map'), {
@@ -19,6 +20,9 @@ export default function Home() {
   const { locations, allLocations, loading, error, updateTimeFilter } = useLocationData();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [startDateTime, setStartDateTime] = useState('');
+  const [endDateTime, setEndDateTime] = useState('');
+  const [selectedRide, setSelectedRide] = useState(null);
 
   // Get the latest location
   const latestLocation = locations.length > 0 ? locations[0] : null;
@@ -32,6 +36,25 @@ export default function Home() {
   const handleFilterChange = (filterValues) => {
     updateTimeFilter(filterValues);
   };
+  
+  // Handle ride selection
+  const handleRideSelect = (ride) => {
+    setSelectedRide(ride);
+    setStartDateTime(new Date(ride.startTime).toISOString().slice(0, 16));
+    setEndDateTime(new Date(ride.endTime).toISOString().slice(0, 16));
+    updateTimeFilter({
+      startDateTime: ride.startTime,
+      endDateTime: ride.endTime
+    });
+  };
+  
+  // Clear selected ride
+  const clearSelectedRide = () => {
+    setSelectedRide(null);
+    setStartDateTime('');
+    setEndDateTime('');
+    updateTimeFilter({ startDateTime: null, endDateTime: null });
+  };
 
   // Toggle filter panel
   const toggleFilter = () => {
@@ -44,7 +67,19 @@ export default function Home() {
       
       <div className="bg-gray-100 dark:bg-gray-900 px-4 py-2 flex justify-between items-center">
         <div className="text-sm text-gray-600 dark:text-gray-300">
-          {locations.length} of {allLocations.length} locations displayed
+          {selectedRide ? (
+            <div className="flex items-center">
+              <span>Showing locations for ride: <strong>{selectedRide.name}</strong></span>
+              <button 
+                onClick={clearSelectedRide}
+                className="ml-2 text-red-500 hover:text-red-700 text-xs px-2 py-1 bg-red-100 rounded"
+              >
+                Clear
+              </button>
+            </div>
+          ) : (
+            <span>{locations.length} of {allLocations.length} locations displayed</span>
+          )}
         </div>
         <button 
           onClick={toggleFilter}
@@ -59,7 +94,21 @@ export default function Home() {
       
       {isFilterOpen && (
         <div className="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <DateTimeFilter onFilterChange={handleFilterChange} />
+          <div className="space-y-4">
+            <DateTimeFilter 
+              onFilterChange={handleFilterChange} 
+              startDateTime={startDateTime}
+              endDateTime={endDateTime}
+              setStartDateTime={setStartDateTime}
+              setEndDateTime={setEndDateTime}
+            />
+            <SaveRidePanel
+              startDateTime={startDateTime}
+              endDateTime={endDateTime}
+              setStartDateTime={setStartDateTime}
+              setEndDateTime={setEndDateTime}
+            />
+          </div>
         </div>
       )}
       
@@ -70,13 +119,21 @@ export default function Home() {
           
           {/* Floating info card for mobile */}
           <div className="lg:hidden absolute bottom-4 left-4 right-4 z-10">
-            <InfoCard location={latestLocation} />
+            <InfoCard 
+              location={latestLocation} 
+              allLocations={locations}
+              onRideSelect={handleRideSelect} 
+            />
           </div>
         </div>
         
         {/* Sidebar info card for desktop */}
         <div className="hidden lg:block w-80 p-4 border-l border-gray-200 dark:border-gray-700 overflow-y-auto">
-          <InfoCard location={latestLocation} />
+          <InfoCard 
+            location={latestLocation} 
+            allLocations={locations}
+            onRideSelect={handleRideSelect} 
+          />
         </div>
         
         {/* Loading state */}

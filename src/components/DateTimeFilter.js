@@ -1,11 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
-const DateTimeFilter = ({ onFilterChange }) => {
-  const [startDateTime, setStartDateTime] = useState('');
-  const [endDateTime, setEndDateTime] = useState('');
-
+const DateTimeFilter = ({ onFilterChange, startDateTime, endDateTime, setStartDateTime, setEndDateTime }) => {
   const handleFilterApply = () => {
     onFilterChange({
       startDateTime: startDateTime ? new Date(startDateTime).toISOString() : null,
